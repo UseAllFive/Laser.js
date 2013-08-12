@@ -1,4 +1,4 @@
-
+/* globals $, _, console */
 /**
  * @library laser.js
  * @author Edward Hotchkiss <edward@candidblend.la>
@@ -106,6 +106,8 @@
     'skewY',
     'perspective'
   ];
+
+  var _$head;
 
   /**
    * @description fallback support for IE9
@@ -269,36 +271,6 @@
   }
 
   /**
-   * @private _insertCSSClass
-   * @description creates a css .class with a unique id to 
-   * add/remove css transitions
-   * @return {String} name inserted css class name
-   */
-
-  function _insertCSSClass(name, content) {
-    var style = '<style id="' + name + '"> .'+ name + ' { ' + content + '} </style>';
-    $('html > head').append(style);
-    return name;
-  }
-
-  /**
-   * @private _removeCSSClass
-   * @description removes a .css class by id
-   * @param {String} classId class identifier
-   */
-
-  function _removeCSSClass(classId) {
-    var stylesheets, deleteRule;
-    stylesheets = document.styleSheets;
-    deleteRule = 'deleteRule' in stylesheets[0] ? 'deleteRule' : 'removeRule';
-    _.forEach(stylesheets, function(stylesheet, index) {
-      if (stylesheet.ownerNode.id === classId) {
-        stylesheets[index][deleteRule]();
-      }
-    });
-  }
-
-  /**
    * @private _id
    * @description generate a unique id, prefixed with "tr_"
    * @return {Number} id
@@ -332,6 +304,7 @@
    * @private _getPrefix
    */
 
+  //-- TODO: Consider using Modernizr.
   function _getPrefix(prop) {
     var prefix, propBrowserTest = _camelCase(prop);
     _.each(_omPrefixes, function(val) {
@@ -351,24 +324,24 @@
    */
 
   function _getPropertyName(prop) {
-    return { 
+    return {
       css : _getPrefix(prop).css + prop.toLowerCase(),
       om  : _getPrefix(prop).om + prop
     };
   }
 
   /**
-   * @method _createTransitionString
-   * @description Generates the a transition string
+   * @method _createTransitionCSS
+   * @description Generates transition property list
    * @params {Object, jQuery Object} Transition changes, jquery objects
    * @returns {String} Returns string of transition
    */
 
-  function _createTransitionString(params, startParams, _duration, easing) {
-    var cur, unit, duration, transformString, blandTransition = '', finalTransition = '';
-    duration = _formatDuration(_duration); 
+  function _createTransitionCSS(params, startParams, duration, easing) {
+    var css = {};
+    var cur, unit, transformString;
     _.each(params, function(val, key) {
-        cur = startParams[key];
+      cur = startParams[key];
       if (_.contains(_transformTypes, key)) {
         unit = (key === 'perspective') ? 'px' : 'deg';
         unit = (key === 'scale') ? '' : unit;
@@ -379,16 +352,15 @@
         }
       } else {
         unit = (key === 'opacity') ? '' : 'px';
-        blandTransition += _getPropertyName(key).css + ' : ' + _formatUnit(val, cur, unit) + ' !important;';
+        css[_getPropertyName(key).css] =  _formatUnit(val, cur, unit);
       }
     });
-    finalTransition += (_getPropertyName('transition-duration').css + ': ' + duration + ' !important;');
-    finalTransition += (_getPropertyName('transition-timing-function').css + ':' + _getEasingBezier(easing) + '!important;');
-    if (transformString !== undefined ) {
-      finalTransition += _getPropertyName('Transform').css + ':' + transformString + ' !important;';
+    css[_getPropertyName('transition-duration').css] = _formatDuration(duration);
+    css[_getPropertyName('transition-timing-function').css] = _getEasingBezier(easing);
+    if (transformString !== undefined) {
+      css[_getPropertyName('Transform').css] =  transformString;
     }
-    finalTransition += blandTransition; 
-    return finalTransition; 
+    return css;
   }
 
   /**
@@ -425,7 +397,7 @@
     if (elem.id) {
       return "#" + elem.id;
     }
-    if (elem.tagName == 'BODY') {
+    if (elem.tagName === 'BODY') {
       return '';
     }
     path = _getCSSPath(elem.parentNode);
@@ -566,15 +538,12 @@
      */
 
     transition: function() {
-      var transitionString;
-      transitionString = _createTransitionString(
-        this.params,  
-        this.startParams,        
-        this.options.duration,  
-        this.options.easing          
-      );
-      _insertCSSClass(this.id, transitionString);
-      this.$elem.addClass(this.id);
+      this.$elem.css(_createTransitionCSS(
+        this.params,
+        this.startParams,
+        this.options.duration,
+        this.options.easing
+      ));
       this.completeTimeout = setTimeout(_.bind(function() {
         this.complete();
       }, this), this.options.duration);
@@ -642,9 +611,9 @@
         return undefined;
       } else {
         _.forEach(params, function(val, key) {
-          result[key] = val;
+          item[key] = val;
         }, this);
-        return obj;
+        return item;
       }
     },
 
@@ -813,7 +782,7 @@
      * @method pause
      * @description pause all active animations, retaining state
      */
-    
+
     pause: function() {
       if (!this.transition) {
         return this;
@@ -829,7 +798,7 @@
             clearTimeout(val.whenTimeout);
             break;
           case 'PLAYING':
-            clearTimeout(val.completeTimeout);                             
+            clearTimeout(val.completeTimeout);
             val.pause();
             break;
         }
@@ -843,7 +812,7 @@
      * @method resume
      * @description resume all paused/on-stack animations
      */
-    
+
     resume: function() {
       if (!this.transition) {
         return this;
@@ -922,5 +891,5 @@
     }
 
   };
-  
+
 }(window));
