@@ -415,6 +415,7 @@
   var Animation = function Animation(params) {
     _.extend(this, params);
     this.state = 'ON_STACK';
+    this.originalStyle = this.$elem.attr('style');
     return this;
   };
 
