@@ -643,6 +643,11 @@
         this.listeners[name].splice(this.listeners[name].indexOf(fn), 1);
       } else {
         this.listeners = {};
+        if (_.isArray(this.timers)) {
+          _.each(this.timers, function(timeout) {
+            clearTimeout(timeout);
+          });
+        }
       }
       return this;
     },
