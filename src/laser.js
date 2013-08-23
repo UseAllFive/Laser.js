@@ -641,6 +641,8 @@
     off: function(name, fn) {
       if (this.listeners[name]) {
         this.listeners[name].splice(this.listeners[name].indexOf(fn), 1);
+      } else {
+        this.listeners = {};
       }
       return this;
     },
