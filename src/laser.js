@@ -415,7 +415,11 @@
   var Animation = function Animation(params) {
     _.extend(this, params);
     this.state = 'ON_STACK';
-    this.originalStyle = this.$elem.attr('style');
+    this.originalStyle = this.$elem.attr('data-original-style');
+    if (this.originalStyle === undefined) {
+        this.originalStyle = this.$elem.attr('style');
+        this.$elem.attr('data-original-style', this.originalStyle);
+    }
     return this;
   };
 
