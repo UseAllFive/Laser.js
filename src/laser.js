@@ -455,8 +455,8 @@
      */
 
     play: function() {
-        this.startParams = this.getCurrentParams();
-        this.state = 'PLAYING';
+      this.startParams = this.getCurrentParams();
+      this.state = 'PLAYING';
       this.active = true;
       if (this.sequence.transition) {
         this.transition();
@@ -496,10 +496,10 @@
      */
 
     resume: function() {
+      this.$elem.addClass(this.id);
       _.forEach(this.getCurrentParams(), function(val, key) {
         this.$elem.css(key, '');
       }, this);
-      this.$elem.addClass(this.id);
       this.completeTimeout = setTimeout(_.bind(function() {
         this.complete();
       }, this), this.options.duration);
@@ -580,9 +580,10 @@
       if (!this.console || !this.DEBUG) {
         return;
       }
-      var log, args;
+      var log, args, name;
+      name = this.name || 'NO NAME';
       args = Array.prototype.slice.call(arguments);
-      args[0] = ('DEBUG [' + _padMilliseconds(this.elapsed()) + '] > ') + message;
+      args[0] = ('DEBUG [' + _padMilliseconds(this.elapsed()) + '] > ') + message + ' "' + name + '"';
       log = Function.prototype.bind.call(console.log, console);
       log.apply(console, args);
     },
@@ -760,6 +761,9 @@
      */
 
     start: function() {
+      if (this.getState() === 'paused') {
+        return this.resume();
+      }
       var animations = this.get('animations');
       this.startedAt = new Date().getTime();
       this.remaining = animations.length;
@@ -797,6 +801,9 @@
 
     pause: function() {
       if (!this.transition) {
+        return this;
+      }
+      if (this.getState() === 'paused') {
         return this;
       }
       this.pausedAt = this.elapsed();
@@ -845,7 +852,7 @@
         }
       }, this);
       this.trigger('sequence:resuming');
-      this.state = 'resumed';
+      this.state = 'resuming';
       return this;
     },
 
@@ -860,6 +867,7 @@
         return this;
       }
       var runTime, reversedAnimations, PAUSE_OFFSET;
+      this.pause();
       PAUSE_OFFSET = this.pausedAt;
       runTime = this.getRunTime();
       this.log('rewinding');
@@ -900,6 +908,27 @@
 
     getState: function() {
       return this.state;
+    },
+
+    /**
+     * @method getName
+     * @description gets a sequences "name" attr for debug/logging purposes
+     * @return {String} name identifier
+     */
+
+    getName: function() {
+      return this.name;
+    },
+
+    /**
+     * @method setName
+     * @description sets a sequences "name" attr for debug/logging purposes
+     * @param {String} name identifier
+     */
+
+    setName: function(name) {
+      this.name = name;
+      return this;
     }
 
   };
