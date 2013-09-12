@@ -22,8 +22,9 @@
     this.state = 'blank';
     this.animations = [];
     this.direction = 'forward';
-    this.transition = _isTransition();
-    this.DEBUG = this.DEBUG || false;
+    this.transition = _isTransition;
+    this.DEBUG = this.DEBUG ||
+      (/http(s)?:\/\/(localhost:8888|[^\/]+.local|192\.168\.1\..*)\//).test(window.location);
     this.console = (typeof(window.console) === 'object');
     return this;
   };
@@ -109,11 +110,20 @@
 
   var _$head;
 
+  var _isIE9 = (/MSIE 9\.0/).test(navigator.userAgent);
+  /**
+   * @private _isTransition
+   * @description determine whether jQuery transit is available
+   * @type {Boolean}
+   */
+  var _isTransition = !_isIE9;
+  _isTransition = false; // For testing jQuery fallback.
+
   /**
    * @description fallback support for IE9
    */
 
-  if (_isTransition()) {
+  if (_isTransition) {
 
     /**
      * @extend jQuery CSS3 hooks for "rotate", "rotateY" and "rotateX"
@@ -204,16 +214,6 @@
   }
 
   /**
-   * @private _isTransition
-   * @description determine whether jQuery transit is available
-   * @return {Boolean} availability
-   */
-
-  function _isTransition() {
-    return (/(MSIE 9\.0)/.test(navigator.userAgent)) ? false : true;
-  }
-
-  /**
    * @private _isValidEasing
    * @description invalid easing method aliases bork .animate/.transition
    * check that the alias exists in the dictionary
@@ -222,7 +222,7 @@
    */
 
   function _isValidEasing(alias) {
-    if (_isTransition()) {
+    if (_isTransition) {
       return ($.cssEase[alias] !== undefined) ? true : false;
     } else {
       return ($.easing[alias] !== undefined) ? true : false;
@@ -458,7 +458,7 @@
       this.startParams = this.getCurrentParams();
       this.state = 'PLAYING';
       this.active = true;
-      if (this.sequence.transition) {
+      if (_isTransition) {
         this.transition();
       } else {
         this.animate();
@@ -534,6 +534,7 @@
         this.state = 'COMPLETED';
         this.active = false;
       }, this);
+      //console.log(this.$elem.selector, window.JSON.stringify(this.params));
       return this.$elem.animate(this.params, this.options);
     },
 
@@ -583,7 +584,14 @@
       var log, args, name;
       name = this.name || 'NO NAME';
       args = Array.prototype.slice.call(arguments);
-      args[0] = ('DEBUG [' + _padMilliseconds(this.elapsed()) + '] > ') + message + ' "' + name + '"';
+      args[0] = ('LASER [' + _padMilliseconds(this.elapsed()) + '] > ') + message + ' "' + name + '"';
+      if (_isIE9) {
+          _.each(_.rest(arguments), function(arg, idx) {
+            if ($.isPlainObject(arg)) {
+                args[idx + 1] = window.JSON.stringify(arg);
+            }
+          });
+      }
       log = Function.prototype.bind.call(console.log, console);
       log.apply(console, args);
     },
@@ -800,7 +808,7 @@
      */
 
     pause: function() {
-      if (!this.transition) {
+      if (!_isTransition) {
         return this;
       }
       if (this.getState() === 'paused') {
@@ -833,7 +841,7 @@
      */
 
     resume: function() {
-      if (!this.transition) {
+      if (!_isTransition) {
         return this;
       }
       var PAUSE_OFFSET = this.pausedAt;
@@ -863,7 +871,7 @@
      */
 
     rewind: function() {
-      if (!this.transition) {
+      if (!_isTransition) {
         return this;
       }
       var runTime, reversedAnimations, PAUSE_OFFSET;
