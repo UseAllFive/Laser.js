@@ -117,7 +117,7 @@
    * @type {Boolean}
    */
   var _isTransition = !_isIE9;
-  _isTransition = false; // For testing jQuery fallback.
+  //_isTransition = false; // For testing jQuery fallback.
 
   /**
    * @description fallback support for IE9
@@ -338,8 +338,23 @@
    */
 
   function _createTransitionCSS(params, startParams, duration, easing) {
-    var css = {};
+    var css = _createAnimationCSS(params, startParams);
+    css[_getPropertyName('transition-duration').css] = _formatDuration(duration);
+    css[_getPropertyName('transition-timing-function').css] = _getEasingBezier(easing);
+    return css;
+  }
+
+  /**
+   * @param {Object} params
+   * @param {Object} startParams
+   * @param {boolean=} [prefixed=true]
+   * @private
+   * @return {Object}
+   */
+  function _createAnimationCSS(params, startParams, prefixed) {
     var cur, unit, transformString;
+    var css = {};
+    prefixed = (prefixed == null) ? true : prefixed;
     _.each(params, function(val, key) {
       cur = startParams[key];
       if (_.contains(_transformTypes, key)) {
@@ -352,13 +367,11 @@
         }
       } else {
         unit = (key === 'opacity') ? '' : 'px';
-        css[_getPropertyName(key).css] =  _formatUnit(val, cur, unit);
+        css[prefixed ? _getPropertyName(key).css : key] =  _formatUnit(val, cur, unit);
       }
     });
-    css[_getPropertyName('transition-duration').css] = _formatDuration(duration);
-    css[_getPropertyName('transition-timing-function').css] = _getEasingBezier(easing);
     if (transformString !== undefined) {
-      css[_getPropertyName('Transform').css] =  transformString;
+      css[prefixed ? _getPropertyName('Transform').css : 'transform'] =  transformString;
     }
     return css;
   }
@@ -526,16 +539,34 @@
      */
 
     animate: function() {
-      var $elem = this.$elem;
-      delete this.options.when;
+      var params, transformName, customEasing;
       this.options.queue = false;
       this.options.complete = _.bind(function() {
         this.sequence.trigger('animation:completed', this);
         this.state = 'COMPLETED';
         this.active = false;
       }, this);
-      //console.log(this.$elem.selector, window.JSON.stringify(this.params));
-      return this.$elem.animate(this.params, this.options);
+      if (!this.$elem.length) {
+        // Skip if nothing animatable.
+        this.options.complete();
+      } else if (this.params.display) {
+        // Skip to using `css` if property isn't animatable.
+        this.$elem.css('display', this.params.display);
+        this.options.complete();
+      } else {
+        if (this.options.easing) {
+          // Convert css cubic-bezier easing to jQuery easing.
+          customEasing = $.easing[this.options.easing];
+          if (_.isString(customEasing) && customEasing.indexOf('cubic-bezier') === 0) {
+            this.options.easing = $.bez(customEasing.match((/-?\d?\.\d+/g)));
+          }
+        }
+        params = _createAnimationCSS(this.params, this.startParams, false);
+        this.sequence.log(this.selector, params, this.options);
+        this.$elem
+          .delay(this.options.when)
+          .animate(params, this.options);
+      }
     },
 
     /**
@@ -724,7 +755,7 @@
      */
 
     addEasing: function(alias, easing) {
-      if (typeof(easing) === 'string') {
+      if (_isTransition) {
         $.cssEase[alias] = easing;
       } else {
         $.easing[alias] = easing;
@@ -741,6 +772,7 @@
     onAnimated: function() {
       if (this.padTime) {
         setTimeout(_.bind(function() {
+          this.log('sequence completed');
           this.trigger('sequence:completed');
         }, this), this.padTime);
       } else {
@@ -758,8 +790,12 @@
 
     onAnimationComplete: function(animation) {
       this.remaining--;
+      //this.log('completed: '+animation.selector, 'remaining: '+this.remaining);
       if (this.remaining === 0) {
         this.trigger('sequence:animated');
+      }
+      if (this.remaining < 0 && window.console) {
+        console.warn('Remaining animations count should not be below 0', this.name);
       }
     },
 
@@ -784,6 +820,7 @@
       }, this);
       this.on('sequence:animated', function() {
         this.onAnimated();
+        this.log('animated sequence');
       });
       this.on('animation:completed', function(animation) {
         this.onAnimationComplete(animation);
