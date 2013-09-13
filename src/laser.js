@@ -802,15 +802,16 @@
      * @return {Laser} Instance for chaining.
      */
     pause: function() {
-      if (!_isTransition) {
-        return this;
-      }
       if (this.getState() === 'paused') {
         return this;
       }
       this.pausedAt = this.elapsed();
       this.log('pausing');
       _.forEach(this.get('animations'), function(val, index) {
+        if (!_isTransition) {
+          val.$elem.pause();
+          return;
+        }
         switch(val.state) {
           case 'STOPPED':
             break;
@@ -834,12 +835,13 @@
      * @return {Laser} Instance for chaining.
      */
     resume: function() {
-      if (!_isTransition) {
-        return this;
-      }
       var PAUSE_OFFSET = this.pausedAt;
       this.log('resuming');
       _.forEach(this.get('animations'), function(val, index) {
+        if (!_isTransition) {
+          val.$elem.resume();
+          return;
+        }
         switch(val.state) {
           case 'PAUSED':
             val.resume();

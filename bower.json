@@ -14,7 +14,8 @@
     "jquery-css3-ease": "1.0.0",
     "jquery-easing": "1.3.0",
     "jquery-transform": "~1.0",
-    "jquery-bez": "https://github.com/rdallasgray/bez.git" // ~1.0
+    "jquery-bez": "https://github.com/rdallasgray/bez.git", // ~1.0
+    "jquery-pause": "https://github.com/tobia/Pause.git" // ~0.1
   },
   "ignore": [
     "node_modules",
