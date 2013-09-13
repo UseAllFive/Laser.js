@@ -123,61 +123,6 @@
    * @description fallback support for IE9
    */
 
-  if (_isTransition) {
-
-    /**
-     * @extend jQuery CSS3 hooks for "rotate", "rotateY" and "rotateX"
-     */
-
-    _.map(['rotate','rotateY','rotateX'], function(key, index) {
-      $.cssHooks[key] = {
-        get: function(elem, computed, extra) {
-            var matrix = _processMatrix($(elem));
-            return '(' + matrix.angle + 'deg)';
-        },
-        set: function(elem, value) {
-          $(elem).css(_getPropertyName('Transform').css, value);
-        }
-      };
-    });
-
-    /**
-     * @extend jQuery CSS3 hook for "scale"
-     */
-
-    $.cssHooks.scale = {
-      get: function(elem, computed) {
-        return _processMatrix($(elem)).scale;
-      },
-      set: function(elem, value) {
-        $(elem).css(_getPropertyName('Transform').css, value);
-      }
-    };
-
-  }
-
-  /**
-   * @private _processMatrix
-   * @description returns values from a matrix
-   */
-
-  function _processMatrix($elem) {
-    var a, b, c, d, angle, scale, values, matrix;
-    matrix = $elem.css(_getPropertyName('Transform').css);
-    if (matrix === 'none') {
-        return 0;
-    }
-    values = matrix.split('(')[1].split(')')[0].split(',');
-    a = values[0];
-    b = values[1];
-    c = values[2];
-    d = values[3];
-    return {
-      scale : Math.sqrt((a * a) + (b*b)),
-      angle : Math.round(Math.atan2(b, a) * (180/Math.PI))
-    };
-  }
-
   /**
    * @private _getCachedElement
    * @param {String} selector CSS selector
@@ -227,17 +172,6 @@
     } else {
       return ($.easing[alias] !== undefined) ? true : false;
     }
-  }
-
-  /**
-   * @private _getEasingBezier
-   * @description gets the value for an aliased CSS3 easing type
-   * @param {String} alias easing name alias
-   * @return {String} 'cubic-bezier' easing string method
-   */
-
-  function _getEasingBezier(alias) {
-    return $.cssEase[alias];
   }
 
   /**
@@ -340,7 +274,7 @@
   function _createTransitionCSS(params, startParams, duration, easing) {
     var css = _createAnimationCSS(params, startParams);
     css[_getPropertyName('transition-duration').css] = _formatDuration(duration);
-    css[_getPropertyName('transition-timing-function').css] = _getEasingBezier(easing);
+    css[_getPropertyName('transition-timing-function').css] = $.cssEase[easing];
     return css;
   }
 
